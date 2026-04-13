@@ -1,35 +1,38 @@
 # Real Estate API
 
-API REST para sistema imobiliário desenvolvida com Node.js, Fastify e PostgreSQL, seguindo os princípios de **Domain-Driven Design (DDD)**.
+API REST para gestão imobiliária. A aplicação cobre autenticação, gestão de imóveis, clientes, corretores, interesses e relatórios gerenciais. Foi construída com Node.js + Fastify e segue uma arquitetura em camadas inspirada em Domain-Driven Design (DDD).
 
 ---
 
-## Status do projeto
+## Visão geral
 
-| Camada | Status |
-|---|---|
-| Domain (entidades + repositórios) | Completo |
-| Application (casos de uso) | Completo |
-| Infra in-memory (para testes) | Completo |
-| Testes unitários | 68 testes, 15 suítes — todos passando |
-| Controllers HTTP (Fastify) | Pendente |
-| Repositórios PostgreSQL | Pendente |
-| Autenticação JWT/sessão no middleware | Pendente |
+**O que é**
+- Backend de um sistema imobiliário: cadastro de imóveis, clientes, corretores e registro de interesses.
+- Autenticação via token (Bearer) e endpoints públicos/privados.
+- Relatórios de desempenho e de imóveis marcados.
 
----
-
-## Stack
-
-- **Runtime:** Node.js (ESM)
-- **Framework HTTP:** Fastify _(integração futura)_
-- **Banco de dados:** PostgreSQL _(integração futura)_
-- **Testes:** Vitest
-- **Linguagem:** TypeScript (strict)
-- **Arquitetura:** DDD com separação em camadas
+**O que contém**
+- Rotas HTTP completas (REST)
+- Regras de negócio no domínio
+- Casos de uso isolados na camada application
+- Repositórios in-memory (usados nos testes)
+- Documentação Swagger/OpenAPI
 
 ---
 
-## Arquitetura
+## Tecnologias usadas
+
+- **Node.js** (ESM)
+- **TypeScript** (strict)
+- **Fastify** (HTTP)
+- **Zod** (validação)
+- **Prisma** (modelagem/cliente)
+- **Vitest** (testes)
+- **Swagger/OpenAPI** (documentação)
+
+---
+
+## Estrutura do projeto (DDD em camadas)
 
 ```
 src/
@@ -40,121 +43,153 @@ src/
 │
 ├── application/                   # Casos de uso — orquestra o domínio
 │   ├── ports/                     # Interfaces para serviços externos (hash, email...)
-│   └── use-cases/
-│       ├── auth/                  # UC01 – Autenticar, UC02 – Recuperar senha
-│       ├── imoveis/               # UC03–UC06, UC12 – CRUD + pesquisa
-│       ├── clientes/              # UC07, UC08 – Cadastro, edição, exclusão, favoritos
-│       ├── corretores/            # UC09, UC10, UC11 – Cadastro e vínculos
-│       ├── engajamento/           # UC13 – Registrar interesse + histórico
-│       └── relatorios/            # UC14 – Imóveis marcados, UC15 – Desempenho
+│   └── use-cases/                 # Casos de uso por contexto
+│       ├── auth/                  # Autenticação, recuperação de senha
+│       ├── imoveis/               # CRUD + pesquisa
+│       ├── clientes/              # Cadastro, edição, favoritos
+│       ├── corretores/            # Cadastro e vínculos
+│       ├── engajamento/           # Interesses + histórico
+│       └── relatorios/            # Relatórios gerenciais
+│
+├── http/                          # Camada HTTP (Fastify)
+│   ├── routes/                    # Rotas
+│   ├── plugins/                   # Plugins (auth, swagger)
+│   └── errors/                    # Handler global de erros
 │
 └── infra/
     └── repositories/
-        └── in-memory/             # Implementações em memória usadas nos testes unitários
+        └── in-memory/             # Implementações em memória (testes)
 
-tests/
-├── helpers/                       # FakeHash + factories de entidades
-└── use-cases/                     # Testes unitários por caso de uso
+prisma/                            # Schema Prisma (DB)
+
+tests/                             # Testes unitários
 ```
 
 ---
 
-## Casos de uso implementados
+## Decisões de arquitetura
 
-### Autenticação
-| UC | Descrição |
-|---|---|
-| UC01 | Autenticar usuário com e-mail e senha, criando sessão |
-| UC02 | Solicitar e usar token de recuperação de senha |
+- **DDD em camadas**: o domínio não depende do HTTP nem de banco.
+- **Casos de uso explícitos**: cada funcionalidade é uma classe de aplicação.
+- **Fastify + Zod**: validação de entrada e performance no HTTP.
+- **Swagger**: documentação e teste visual das rotas.
+- **Sessão por token UUID** (não JWT) no MVP, para simplificar.
+
+---
+
+## Requisitos
+
+- **Node.js** 20+ (recomendado LTS)
+- **npm**
+- **Docker** (opcional, para subir o banco)
+
+---
+
+## Como rodar o projeto (passo a passo)
+
+### 1. Clonar o repositório
+```
+git clone <URL_DO_REPO>
+cd projet-imobiliaria
+```
+
+### 2. Instalar dependências
+```
+npm install
+```
+
+### 3. (Opcional) Subir banco PostgreSQL via Docker
+Se quiser usar o banco local:
+```
+npm run db:up
+```
+
+### 4. (Opcional) Rodar migrations do Prisma
+```
+npm run prisma:generate
+npm run prisma:migrate
+```
+
+### 5. Rodar o servidor em modo desenvolvimento
+```
+npm run dev
+```
+
+A aplicação inicia em `http://localhost:3000`.
+
+---
+
+## Documentação Swagger
+
+A UI do Swagger fica em:
+
+- `GET /docs`
+
+Para ajustar a URL base exibida no Swagger, defina:
+
+- `SWAGGER_SERVER_URL`
+
+---
+
+## Rotas principais
+
+### Auth
+- `POST /auth/login`
+- `POST /auth/recuperar-senha`
+- `POST /auth/redefinir-senha`
+- `DELETE /auth/logout`
 
 ### Imóveis
-| UC | Descrição |
-|---|---|
-| UC03 | Cadastrar imóvel (restrito a ADMINISTRADOR, GESTOR, CORRETOR) |
-| UC04 | Editar imóvel |
-| UC05 | Excluir imóvel (bloqueado se status ativo ou com interesses) |
-| UC06 | Visualizar ficha detalhada com contador de favoritos |
-| UC12 | Pesquisar com filtros: tipo, finalidade, preço, quartos, cidade, etc. |
+- `GET /imoveis`
+- `GET /imoveis/:id`
+- `POST /imoveis`
+- `PATCH /imoveis/:id`
+- `DELETE /imoveis/:id`
 
 ### Clientes
-| UC | Descrição |
-|---|---|
-| UC07 | Cadastrar cliente (cria usuário + perfil cliente) |
-| — | Editar dados do cliente |
-| RF023 | Excluir cliente (bloqueado se houver interesses ativos) |
-| UC08 | Adicionar, remover e listar imóveis favoritos |
+- `POST /clientes`
+- `PATCH /clientes/:id`
+- `DELETE /clientes/:id`
+- `GET /clientes/:id/favoritos`
+- `POST /clientes/:id/favoritos`
+- `DELETE /clientes/:id/favoritos/:imovelId`
+- `GET /clientes/:id/interesses`
 
 ### Corretores
-| UC | Descrição |
-|---|---|
-| UC09 | Cadastrar corretor (restrito a ADMINISTRADOR) |
-| UC10 | Vincular corretor a imóvel |
-| UC11 | Vincular corretor a cliente |
+- `POST /corretores`
+- `POST /corretores/:id/imoveis`
+- `POST /corretores/:id/clientes`
 
-### Engajamento
-| UC | Descrição |
-|---|---|
-| UC13 | Registrar interesse do cliente em imóvel (com histórico) |
+### Interesses
+- `POST /interesses`
 
 ### Relatórios
-| UC | Descrição |
-|---|---|
-| UC14 | Relatório de imóveis marcados (favoritos + interesses por imóvel) |
-| UC15 | Relatório de desempenho de corretores (restrito a ADMINISTRADOR/GESTOR) |
+- `GET /relatorios/imoveis-marcados/:corretorId`
+- `GET /relatorios/desempenho-corretores`
+
+### Health check
+- `GET /health`
 
 ---
 
 ## Perfis de acesso
 
-| Perfil | Permissões principais |
-|---|---|
-| ADMINISTRADOR | Acesso total |
-| GESTOR | CRUD de imóveis, relatórios, vínculos |
-| CORRETOR | Cadastrar/editar imóveis, vincular, relatório próprio |
-| CLIENTE | Cadastro próprio, favoritos, registrar interesse |
+- **ADMINISTRADOR**: acesso total
+- **GESTOR**: CRUD de imóveis, relatórios, vínculos
+- **CORRETOR**: cadastrar/editar imóveis, vínculo, relatório próprio
+- **CLIENTE**: auto-cadastro, favoritos, registrar interesse
 
 ---
 
-## Swagger / OpenAPI
+## Testes
 
-A documentação interativa está disponível em:
-
-- `GET /docs`
-
-Para ajustar a URL base exibida na UI, defina a variável de ambiente `SWAGGER_SERVER_URL`.
-
----
-
-## Rodando os testes
-
-```bash
-npm install
+Rodar testes unitários:
+```
 npm test
 ```
 
-Saída esperada:
+Rodar testes E2E:
 ```
-Test Files  15 passed (15)
-     Tests  68 passed (68)
+npm run test:e2e
 ```
 
----
-
-## O que foi deixado para fora do MVP (intencional)
-
-- **Envio de e-mail/SMS** para recuperação de senha (UC02 retorna o token diretamente)
-- **Upload de mídias** — tabela `midia_imovel` modelada no banco mas sem endpoint no MVP
-- **JWT** — sessões controladas por token UUID simples (sem assinar/verificar JWT ainda)
-- **Middleware HTTP de autenticação** — `perfilExecutor` passado explicitamente nos use cases até a camada HTTP existir
-- **Paginação** nas listagens
-- **Log de transações** (`log_transacao`) — tabela existe no banco, integração futura
-
----
-
-## Próximos passos
-
-1. Implementar controllers Fastify com validação de schema (Zod)
-2. Implementar repositórios PostgreSQL (com Drizzle ou `pg` direto)
-3. Implementar `HashPort` com `bcrypt`
-4. Middleware de autenticação que valida a sessão e injeta perfil/ids no request
-5. Testes E2E com banco real (Vitest + Docker)
