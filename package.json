@@ -4,15 +4,37 @@
   "description": "Real Estate API - Core Domain",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/http/server.ts",
+    "start": "node dist/http/server.js",
+    "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.config.e2e.ts",
+    "test:e2e:watch": "vitest --config vitest.config.e2e.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "@fastify/cors": "^8.0.0",
+    "@prisma/client": "^5.0.0",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^4.0.0",
+    "fastify-plugin": "^4.5.1",
+    "zod": "^3.0.0"
+  },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.0.0",
+    "pino-pretty": "^11.0.0",
+    "prisma": "^5.0.0",
+    "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.6.0"
   }

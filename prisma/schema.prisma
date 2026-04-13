@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum PerfilUsuario {
+  ADMINISTRADOR
+  GESTOR
+  CORRETOR
+  CLIENTE
+}
+
+enum TipoImovel {
+  APARTAMENTO
+  CASA
+  COMERCIAL
+  TERRENO
+  RURAL
+  STUDIO
+  COBERTURA
+}
+
+enum FinalidadeImovel {
+  VENDA
+  LOCACAO
+  VENDA_LOCACAO
+}
+
+enum StatusImovel {
+  DISPONIVEL
+  RESERVADO
+  VENDIDO
+  LOCADO
+  INATIVO
+}
+
+enum StatusInteresse {
+  PENDENTE
+  EM_ATENDIMENTO
+  AGENDADO
+  FINALIZADO
+  CANCELADO
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model Usuario {
+  id           String        @id @default(uuid())
+  nome         String
+  email        String        @unique
+  senhaHash    String        @map("senha_hash")
+  telefone     String?
+  cpf          String?       @unique
+  perfil       PerfilUsuario
+  ativo        Boolean       @default(true)
+  criadoEm    DateTime      @default(now()) @map("criado_em")
+  atualizadoEm DateTime     @updatedAt @map("atualizado_em")
+
+  sessoes           Sessao[]
+  tokensRecuperacao TokenRecuperacao[]
+  cliente           Cliente?
+  corretor          Corretor?
+
+  @@map("usuarios")
+}
+
+model Sessao {
+  id        String   @id @default(uuid())
+  usuarioId String   @map("usuario_id")
+  token     String   @unique
+  ip        String?
+  ativa     Boolean  @default(true)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  expiraEm  DateTime @map("expira_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("sessoes")
+}
+
+model TokenRecuperacao {
+  id        String   @id @default(uuid())
+  usuarioId String   @map("usuario_id")
+  token     String   @unique
+  utilizado Boolean  @default(false)
+  expiracao DateTime
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("tokens_recuperacao")
+}
+
+model Cliente {
+  id             String    @id @default(uuid())
+  usuarioId      String    @unique @map("usuario_id")
+  dataNascimento DateTime? @map("data_nascimento")
+  profissao      String?
+  criadoEm       DateTime  @default(now()) @map("criado_em")
+
+  usuario    Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  favoritos  ClienteFavorito[]
+  interesses Interesse[]
+  corretores CorretorCliente[]
+
+  @@map("clientes")
+}
+
+model Corretor {
+  id        String   @id @default(uuid())
+  usuarioId String   @unique @map("usuario_id")
+  creci     String   @unique
+  bio       String?
+  fotoUrl   String?  @map("foto_url")
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  usuario    Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  imoveis    CorretorImovel[]
+  clientes   CorretorCliente[]
+  interesses Interesse[]
+
+  @@map("corretores")
+}
+
+model Imovel {
+  id                    String           @id @default(uuid())
+  titulo                String
+  tipo                  TipoImovel
+  finalidade            FinalidadeImovel
+  descricao             String?
+  areaTotal             Float?           @map("area_total")
+  areaUtil              Float?           @map("area_util")
+  quartos               Int
+  banheiros             Int
+  vagas                 Int
+  preco                 Float
+  status                StatusImovel     @default(DISPONIVEL)
+  corretorResponsavelId String?          @map("corretor_responsavel_id")
+  dataConstrucao        DateTime?        @map("data_construcao")
+  criadoEm              DateTime         @default(now()) @map("criado_em")
+  atualizadoEm          DateTime         @updatedAt @map("atualizado_em")
+
+  // Endereço achatado (EnderecoImovelVO inline)
+  endCep         String  @map("end_cep")
+  endLogradouro  String  @map("end_logradouro")
+  endNumero      String  @map("end_numero")
+  endComplemento String? @map("end_complemento")
+  endBairro      String  @map("end_bairro")
+  endCidade      String  @map("end_cidade")
+  endEstado      String  @map("end_estado")
+  endLatitude    Float?  @map("end_latitude")
+  endLongitude   Float?  @map("end_longitude")
+
+  favoritos  ClienteFavorito[]
+  interesses Interesse[]
+  corretores CorretorImovel[]
+
+  @@index([status])
+  @@index([tipo])
+  @@index([finalidade])
+  @@index([endCidade])
+  @@index([endEstado])
+  @@index([preco])
+  @@map("imoveis")
+}
+
+model Interesse {
+  id          String          @id @default(uuid())
+  clienteId   String          @map("cliente_id")
+  imovelId    String          @map("imovel_id")
+  corretorId  String?         @map("corretor_id")
+  mensagem    String?
+  status      StatusInteresse @default(PENDENTE)
+  criadoEm   DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime      @updatedAt @map("atualizado_em")
+
+  cliente  Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  imovel   Imovel    @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+  corretor Corretor? @relation(fields: [corretorId], references: [id], onDelete: SetNull)
+
+  @@index([clienteId])
+  @@index([imovelId])
+  @@index([corretorId])
+  @@map("interesses")
+}
+
+model ClienteFavorito {
+  id        String   @id @default(uuid())
+  clienteId String   @map("cliente_id")
+  imovelId  String   @map("imovel_id")
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  imovel  Imovel  @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, imovelId])
+  @@map("clientes_favoritos")
+}
+
+model CorretorImovel {
+  id         String   @id @default(uuid())
+  corretorId String   @map("corretor_id")
+  imovelId   String   @map("imovel_id")
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  corretor Corretor @relation(fields: [corretorId], references: [id], onDelete: Cascade)
+  imovel   Imovel   @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+
+  @@unique([corretorId, imovelId])
+  @@map("corretores_imoveis")
+}
+
+model CorretorCliente {
+  id         String   @id @default(uuid())
+  corretorId String   @map("corretor_id")
+  clienteId  String   @map("cliente_id")
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  corretor Corretor @relation(fields: [corretorId], references: [id], onDelete: Cascade)
+  cliente  Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([corretorId, clienteId])
+  @@map("corretores_clientes")
+}
