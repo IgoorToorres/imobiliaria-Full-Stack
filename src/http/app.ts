@@ -4,6 +4,7 @@ import cors from '@fastify/cors'
 import { buildContainer } from './container.js'
 import { errorHandler } from './errors/handler.js'
 import { authenticatePlugin } from './plugins/authenticate.plugin.js'
+import { swaggerPlugin } from './plugins/swagger.plugin.js'
 
 import { authRoutes } from './routes/auth.routes.js'
 import { imoveisRoutes } from './routes/imoveis.routes.js'
@@ -27,6 +28,9 @@ export async function buildApp() {
     origin: process.env.CORS_ORIGIN ?? true,
   })
 
+  // ─── Swagger/OpenAPI ────────────────────────────────────────────────────
+  await app.register(swaggerPlugin)
+
   // ─── Container DI ─────────────────────────────────────────────────────────
   app.decorate('container', buildContainer())
 
@@ -45,7 +49,23 @@ export async function buildApp() {
   await app.register(relatoriosRoutes, { prefix: '/relatorios' })
 
   // ─── Health check ─────────────────────────────────────────────────────────
-  app.get('/health', async () => ({ status: 'ok' }))
+  app.get('/health', {
+    schema: {
+      tags: ['Health'],
+      summary: 'Health check',
+      description: 'Verifica se a aplicação está no ar.',
+      response: {
+        200: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['status'],
+          properties: {
+            status: { type: 'string', example: 'ok' },
+          },
+        },
+      },
+    },
+  }, async () => ({ status: 'ok' }))
 
   return app
 }

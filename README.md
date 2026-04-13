@@ -115,6 +115,16 @@ tests/
 
 ---
 
+## Swagger / OpenAPI
+
+A documentação interativa está disponível em:
+
+- `GET /docs`
+
+Para ajustar a URL base exibida na UI, defina a variável de ambiente `SWAGGER_SERVER_URL`.
+
+---
+
 ## Rodando os testes
 
 ```bash

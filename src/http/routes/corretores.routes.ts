@@ -25,6 +25,42 @@ export async function corretoresRoutes(app: FastifyInstance) {
   // POST /corretores  (autenticado — apenas ADMINISTRADOR)
   app.post('/', {
     preHandler: app.authenticate,
+    schema: {
+      tags: ['Corretores'],
+      summary: 'Cadastrar corretor',
+      description: 'Cria um usuário corretor. Requer perfil ADMINISTRADOR.',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['nome', 'email', 'senha', 'creci'],
+        properties: {
+          nome: { type: 'string' },
+          email: { type: 'string', format: 'email' },
+          senha: { type: 'string', minLength: 6 },
+          telefone: { type: 'string' },
+          cpf: { type: 'string' },
+          creci: { type: 'string' },
+          bio: { type: 'string' },
+        },
+      },
+      response: {
+        201: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['usuarioId', 'corretorId'],
+          properties: {
+            usuarioId: { type: 'string', format: 'uuid' },
+            corretorId: { type: 'string', format: 'uuid' },
+          },
+        },
+        400: { $ref: 'ValidationError#' },
+        401: { $ref: 'ErrorResponse#' },
+        403: { $ref: 'ErrorResponse#' },
+        409: { $ref: 'ErrorResponse#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
   }, async (request, reply) => {
     const body = cadastrarCorretorSchema.parse(request.body)
 
@@ -39,6 +75,37 @@ export async function corretoresRoutes(app: FastifyInstance) {
   // POST /corretores/:id/imoveis  (autenticado)
   app.post('/:id/imoveis', {
     preHandler: app.authenticate,
+    schema: {
+      tags: ['Corretores'],
+      summary: 'Vincular imóvel ao corretor',
+      description: 'Associa um imóvel existente a um corretor.',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+        },
+      },
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['imovelId'],
+        properties: {
+          imovelId: { type: 'string', format: 'uuid' },
+        },
+      },
+      response: {
+        201: { type: 'null', description: 'Vínculo criado' },
+        400: { $ref: 'ValidationError#' },
+        401: { $ref: 'ErrorResponse#' },
+        403: { $ref: 'ErrorResponse#' },
+        404: { $ref: 'ErrorResponse#' },
+        409: { $ref: 'ErrorResponse#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = vincularImovelSchema.parse(request.body)
@@ -55,6 +122,37 @@ export async function corretoresRoutes(app: FastifyInstance) {
   // POST /corretores/:id/clientes  (autenticado)
   app.post('/:id/clientes', {
     preHandler: app.authenticate,
+    schema: {
+      tags: ['Corretores'],
+      summary: 'Vincular cliente ao corretor',
+      description: 'Associa um cliente existente a um corretor.',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+        },
+      },
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['clienteId'],
+        properties: {
+          clienteId: { type: 'string', format: 'uuid' },
+        },
+      },
+      response: {
+        201: { type: 'null', description: 'Vínculo criado' },
+        400: { $ref: 'ValidationError#' },
+        401: { $ref: 'ErrorResponse#' },
+        403: { $ref: 'ErrorResponse#' },
+        404: { $ref: 'ErrorResponse#' },
+        409: { $ref: 'ErrorResponse#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = vincularClienteSchema.parse(request.body)

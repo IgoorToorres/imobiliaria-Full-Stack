@@ -13,9 +13,13 @@ const enderecoSchema = z.object({
   longitude: z.number().optional(),
 })
 
-const tipoImovelEnum = z.enum(['APARTAMENTO', 'CASA', 'COMERCIAL', 'TERRENO', 'RURAL', 'STUDIO', 'COBERTURA'])
-const finalidadeEnum = z.enum(['VENDA', 'LOCACAO', 'VENDA_LOCACAO'])
-const statusEnum = z.enum(['DISPONIVEL', 'RESERVADO', 'VENDIDO', 'LOCADO', 'INATIVO'])
+const tipoImovelValues = ['APARTAMENTO', 'CASA', 'COMERCIAL', 'TERRENO', 'RURAL', 'STUDIO', 'COBERTURA'] as const
+const finalidadeValues = ['VENDA', 'LOCACAO', 'VENDA_LOCACAO'] as const
+const statusValues = ['DISPONIVEL', 'RESERVADO', 'VENDIDO', 'LOCADO', 'INATIVO'] as const
+
+const tipoImovelEnum = z.enum(tipoImovelValues)
+const finalidadeEnum = z.enum(finalidadeValues)
+const statusEnum = z.enum(statusValues)
 
 const cadastrarImovelSchema = z.object({
   titulo: z.string().min(1, 'Título obrigatório'),
@@ -71,14 +75,80 @@ export async function imoveisRoutes(app: FastifyInstance) {
   const { container } = app
 
   // GET /imoveis  (público)
-  app.get('/', async (request, reply) => {
+  app.get('/', {
+    schema: {
+      tags: ['Imoveis'],
+      summary: 'Pesquisar imóveis',
+      description: 'Lista imóveis com filtros opcionais e total encontrado.',
+      querystring: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          tipo: { type: 'string', enum: [...tipoImovelValues] },
+          finalidade: { type: 'string', enum: [...finalidadeValues] },
+          status: { type: 'string', enum: [...statusValues] },
+          cidade: { type: 'string' },
+          estado: { type: 'string' },
+          bairro: { type: 'string' },
+          precoMin: { type: 'number', minimum: 0 },
+          precoMax: { type: 'number', minimum: 0 },
+          areaMin: { type: 'number', minimum: 0 },
+          quartos: { type: 'integer', minimum: 0 },
+          banheiros: { type: 'integer', minimum: 0 },
+          vagas: { type: 'integer', minimum: 0 },
+          ordenarPor: { type: 'string', enum: ['preco', 'criadoEm', 'dataConstrucao'] },
+          ordem: { type: 'string', enum: ['asc', 'desc'] },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['imoveis', 'total'],
+          properties: {
+            imoveis: { type: 'array', items: { $ref: 'Imovel#' } },
+            total: { type: 'integer', minimum: 0 },
+          },
+        },
+        400: { $ref: 'ValidationError#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
+  }, async (request, reply) => {
     const filtros = filtrosSchema.parse(request.query)
     const resultado = await container.pesquisarImoveis.execute(filtros)
     return reply.status(200).send(resultado)
   })
 
   // GET /imoveis/:id  (público)
-  app.get('/:id', async (request, reply) => {
+  app.get('/:id', {
+    schema: {
+      tags: ['Imoveis'],
+      summary: 'Detalhar imóvel',
+      description: 'Retorna os dados do imóvel e o total de favoritos.',
+      params: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['imovel', 'totalFavoritos'],
+          properties: {
+            imovel: { $ref: 'Imovel#' },
+            totalFavoritos: { type: 'integer', minimum: 0 },
+          },
+        },
+        404: { $ref: 'ErrorResponse#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
+  }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const resultado = await container.visualizarImovel.execute(id)
     return reply.status(200).send(resultado)
@@ -87,6 +157,47 @@ export async function imoveisRoutes(app: FastifyInstance) {
   // POST /imoveis  (autenticado)
   app.post('/', {
     preHandler: app.authenticate,
+    schema: {
+      tags: ['Imoveis'],
+      summary: 'Cadastrar imóvel',
+      description: 'Cria um novo imóvel. Requer perfil ADMINISTRADOR, GESTOR ou CORRETOR.',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['titulo', 'tipo', 'finalidade', 'preco', 'endereco'],
+        properties: {
+          titulo: { type: 'string' },
+          tipo: { type: 'string', enum: [...tipoImovelValues] },
+          finalidade: { type: 'string', enum: [...finalidadeValues] },
+          descricao: { type: 'string' },
+          areaTotal: { type: 'number', minimum: 0 },
+          areaUtil: { type: 'number', minimum: 0 },
+          quartos: { type: 'integer', minimum: 0, default: 0 },
+          banheiros: { type: 'integer', minimum: 0, default: 0 },
+          vagas: { type: 'integer', minimum: 0, default: 0 },
+          preco: { type: 'number', minimum: 0 },
+          endereco: { $ref: 'ImovelEndereco#' },
+          corretorResponsavelId: { type: 'string', format: 'uuid' },
+          dataConstrucao: { type: 'string', format: 'date-time' },
+        },
+      },
+      response: {
+        201: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['imovel'],
+          properties: {
+            imovel: { $ref: 'Imovel#' },
+          },
+        },
+        400: { $ref: 'ValidationError#' },
+        401: { $ref: 'ErrorResponse#' },
+        403: { $ref: 'ErrorResponse#' },
+        404: { $ref: 'ErrorResponse#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
   }, async (request, reply) => {
     const body = cadastrarImovelSchema.parse(request.body)
 
@@ -101,6 +212,55 @@ export async function imoveisRoutes(app: FastifyInstance) {
   // PATCH /imoveis/:id  (autenticado)
   app.patch('/:id', {
     preHandler: app.authenticate,
+    schema: {
+      tags: ['Imoveis'],
+      summary: 'Editar imóvel',
+      description: 'Atualiza campos do imóvel. Requer perfil ADMINISTRADOR, GESTOR ou CORRETOR.',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+        },
+      },
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          titulo: { type: 'string' },
+          tipo: { type: 'string', enum: [...tipoImovelValues] },
+          finalidade: { type: 'string', enum: [...finalidadeValues] },
+          descricao: { type: 'string' },
+          areaTotal: { type: 'number', minimum: 0 },
+          areaUtil: { type: 'number', minimum: 0 },
+          quartos: { type: 'integer', minimum: 0 },
+          banheiros: { type: 'integer', minimum: 0 },
+          vagas: { type: 'integer', minimum: 0 },
+          preco: { type: 'number', minimum: 0 },
+          status: { type: 'string', enum: [...statusValues] },
+          endereco: { $ref: 'ImovelEndereco#' },
+          corretorResponsavelId: { type: 'string', format: 'uuid' },
+          dataConstrucao: { type: 'string', format: 'date-time' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['imovel'],
+          properties: {
+            imovel: { $ref: 'Imovel#' },
+          },
+        },
+        400: { $ref: 'ValidationError#' },
+        401: { $ref: 'ErrorResponse#' },
+        403: { $ref: 'ErrorResponse#' },
+        404: { $ref: 'ErrorResponse#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = editarImovelSchema.parse(request.body)
@@ -117,6 +277,27 @@ export async function imoveisRoutes(app: FastifyInstance) {
   // DELETE /imoveis/:id  (autenticado)
   app.delete('/:id', {
     preHandler: app.authenticate,
+    schema: {
+      tags: ['Imoveis'],
+      summary: 'Excluir imóvel',
+      description: 'Remove um imóvel pelo ID. Requer perfil ADMINISTRADOR, GESTOR ou CORRETOR.',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+        },
+      },
+      response: {
+        204: { type: 'null', description: 'Imóvel removido' },
+        401: { $ref: 'ErrorResponse#' },
+        403: { $ref: 'ErrorResponse#' },
+        404: { $ref: 'ErrorResponse#' },
+        500: { $ref: 'ErrorResponse#' },
+      },
+    },
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
 
