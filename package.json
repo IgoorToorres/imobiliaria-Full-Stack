@@ -21,6 +21,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@fastify/cors": "^8.0.0",
     "@fastify/swagger": "^8.15.0",

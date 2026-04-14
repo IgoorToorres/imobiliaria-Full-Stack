@@ -1,195 +1,302 @@
-# Real Estate API
+# Real Estate — Fullstack
 
-API REST para gestão imobiliária. A aplicação cobre autenticação, gestão de imóveis, clientes, corretores, interesses e relatórios gerenciais. Foi construída com Node.js + Fastify e segue uma arquitetura em camadas inspirada em Domain-Driven Design (DDD).
+Sistema imobiliário completo com backend em Node.js/Fastify e frontend em React. Cobre autenticação, gestão de imóveis, clientes, corretores, interesses e relatórios gerenciais.
 
 ---
 
 ## Visão geral
 
-**O que é**
-- Backend de um sistema imobiliário: cadastro de imóveis, clientes, corretores e registro de interesses.
-- Autenticação via token (Bearer) e endpoints públicos/privados.
-- Relatórios de desempenho e de imóveis marcados.
+**Backend**
+- API REST com Node.js + Fastify, arquitetura DDD em camadas
+- Autenticação via Bearer token (sessão UUID), perfis de acesso
+- CRUD de imóveis, clientes, corretores, favoritos, interesses
+- Relatórios de desempenho e imóveis marcados
+- Documentação Swagger/OpenAPI em `/docs`
 
-**O que contém**
-- Rotas HTTP completas (REST)
-- Regras de negócio no domínio
-- Casos de uso isolados na camada application
-- Repositórios in-memory (usados nos testes)
-- Documentação Swagger/OpenAPI
-
----
-
-## Tecnologias usadas
-
-- **Node.js** (ESM)
-- **TypeScript** (strict)
-- **Fastify** (HTTP)
-- **Zod** (validação)
-- **Prisma** (modelagem/cliente)
-- **Vitest** (testes)
-- **Swagger/OpenAPI** (documentação)
+**Frontend**
+- SPA em React + Vite consumindo a API do backend
+- Listagem pública de imóveis com filtros e página de detalhes
+- Dashboard por perfil (Admin, Gestor, Corretor, Cliente)
+- Autenticação completa: login, cadastro, recuperação de senha
+- Gerenciamento de estado com Zustand e cache de dados com TanStack Query
 
 ---
 
-## Estrutura do projeto (DDD em camadas)
+## Tecnologias
+
+### Backend
+- **Node.js** (ESM) + **TypeScript** (strict)
+- **Fastify** — HTTP server
+- **Zod** — validação de entrada
+- **Prisma** — ORM + migrations
+- **PostgreSQL** — banco de dados
+- **bcryptjs** — hash de senha
+- **Vitest** — testes unitários
+- **Swagger/OpenAPI** — documentação
+
+### Frontend
+- **React 18** + **TypeScript**
+- **Vite** — bundler e dev server
+- **React Router v6** — roteamento client-side
+- **TanStack Query v5** — cache e sincronização de dados
+- **shadcn/ui** + **Tailwind CSS** — componentes e estilo
+- **Zustand** — gerenciamento de estado de autenticação
+- **Axios** — cliente HTTP
+
+---
+
+## Estrutura do projeto
 
 ```
-src/
-├── domain/                        # Núcleo do negócio — sem dependências externas
-│   ├── entities/                  # Entidades e Value Objects
-│   ├── repositories/              # Interfaces (contratos) dos repositórios
-│   └── errors/                    # Erros de domínio tipados
+projet-rodrigo/
 │
-├── application/                   # Casos de uso — orquestra o domínio
-│   ├── ports/                     # Interfaces para serviços externos (hash, email...)
-│   └── use-cases/                 # Casos de uso por contexto
-│       ├── auth/                  # Autenticação, recuperação de senha
-│       ├── imoveis/               # CRUD + pesquisa
-│       ├── clientes/              # Cadastro, edição, favoritos
-│       ├── corretores/            # Cadastro e vínculos
-│       ├── engajamento/           # Interesses + histórico
-│       └── relatorios/            # Relatórios gerenciais
+├── src/                           # Backend
+│   ├── domain/                    # Núcleo — entidades, repositórios, erros
+│   ├── application/               # Casos de uso por contexto
+│   ├── http/                      # Rotas, plugins, handler de erros
+│   └── infra/                     # Repositórios in-memory e PostgreSQL
 │
-├── http/                          # Camada HTTP (Fastify)
-│   ├── routes/                    # Rotas
-│   ├── plugins/                   # Plugins (auth, swagger)
-│   └── errors/                    # Handler global de erros
+├── prisma/                        # Schema, migrations e seed
+├── tests/                         # Testes unitários
 │
-└── infra/
-    └── repositories/
-        └── in-memory/             # Implementações em memória (testes)
-
-prisma/                            # Schema Prisma (DB)
-
-tests/                             # Testes unitários
+└── frontend/                      # Frontend
+    └── src/
+        ├── app/                   # Router + Providers (QueryClient)
+        ├── components/
+        │   ├── ui/                # Componentes shadcn/ui
+        │   └── layout/            # Layout compartilhado (header, nav)
+        ├── features/              # Por domínio: api/ + hooks/
+        │   ├── auth/
+        │   ├── imoveis/
+        │   ├── clientes/
+        │   ├── corretores/
+        │   ├── interesses/
+        │   └── relatorios/
+        ├── pages/                 # Páginas da aplicação
+        ├── store/                 # Estado global (auth)
+        ├── types/                 # Tipos TypeScript alinhados com o backend
+        └── lib/                   # Utilitários (api.ts, utils.ts)
 ```
-
----
-
-## Decisões de arquitetura
-
-- **DDD em camadas**: o domínio não depende do HTTP nem de banco.
-- **Casos de uso explícitos**: cada funcionalidade é uma classe de aplicação.
-- **Fastify + Zod**: validação de entrada e performance no HTTP.
-- **Swagger**: documentação e teste visual das rotas.
-- **Sessão por token UUID** (não JWT) no MVP, para simplificar.
 
 ---
 
 ## Requisitos
 
-- **Node.js** 20+ (recomendado LTS)
+- **Node.js** 20+ (LTS recomendado)
 - **npm**
-- **Docker** (opcional, para subir o banco)
+- **Docker** (para o banco PostgreSQL)
 
 ---
 
-## Como rodar o projeto (passo a passo)
+## Backend — Como rodar
 
 ### 1. Clonar o repositório
-```
+```bash
 git clone <URL_DO_REPO>
-cd projet-imobiliaria
+cd projet-rodrigo
 ```
 
 ### 2. Instalar dependências
-```
+```bash
 npm install
 ```
 
-### 3. (Opcional) Subir banco PostgreSQL via Docker
-Se quiser usar o banco local:
+### 3. Configurar variáveis de ambiente
+```bash
+cp .env.example .env
 ```
+
+Edite o `.env` conforme necessário:
+```
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/projet_rodrigo"
+```
+
+### 4. Subir o banco de dados via Docker
+```bash
 npm run db:up
 ```
 
-### 4. (Opcional) Rodar migrations do Prisma
-```
+### 5. Rodar migrations e gerar o client Prisma
+```bash
 npm run prisma:generate
 npm run prisma:migrate
 ```
 
-### 5. Rodar o servidor em modo desenvolvimento
+### 6. (Opcional) Popular o banco com dados de exemplo
+```bash
+npx prisma db seed
 ```
+
+Isso cria automaticamente:
+
+| Perfil | E-mail | Senha |
+|---|---|---|
+| Administrador | admin@imobiliaria.com | senha123 |
+| Gestor | fernanda@imobiliaria.com | senha123 |
+| Gestor | ricardo@imobiliaria.com | senha123 |
+| Corretor | carlos@imobiliaria.com | senha123 |
+| Corretor | ana.paula@imobiliaria.com | senha123 |
+| Corretor | marcelo@imobiliaria.com | senha123 |
+| Cliente | maria@email.com | senha123 |
+| Cliente | joao@email.com | senha123 |
+| *(+ 8 clientes)* | ... | senha123 |
+
+Além de 20 imóveis (SP, RJ, MG, SC), 15 favoritos e 8 interesses com status variados.
+
+### 7. Iniciar o servidor
+```bash
 npm run dev
 ```
 
-A aplicação inicia em `http://localhost:3000`.
+API disponível em `http://localhost:3000`
+Swagger em `http://localhost:3000/docs`
 
 ---
 
-## Documentação Swagger
+## Frontend — Como rodar
 
-A UI do Swagger fica em:
+### 1. Entrar na pasta do frontend
+```bash
+cd frontend
+```
 
-- `GET /docs`
+### 2. Instalar dependências
+```bash
+npm install
+```
 
-Para ajustar a URL base exibida no Swagger, defina:
+### 3. Configurar variáveis de ambiente
+```bash
+cp .env.example .env
+```
 
-- `SWAGGER_SERVER_URL`
+Conteúdo do `.env`:
+```
+VITE_API_URL=http://localhost:3000
+```
+
+### 4. Iniciar o dev server
+```bash
+npm run dev
+```
+
+Frontend disponível em `http://localhost:5173`
+
+> O backend precisa estar rodando em `localhost:3000` para o frontend funcionar.
 
 ---
 
-## Rotas principais
+## Funcionalidades do frontend
+
+### Públicas (sem login)
+| Rota | Descrição |
+|---|---|
+| `/imoveis` | Listagem de imóveis com busca por cidade |
+| `/imoveis/:id` | Detalhes do imóvel (quartos, área, preço, endereço, favoritos) |
+| `/login` | Login com e-mail e senha |
+| `/cadastro` | Auto-cadastro de cliente |
+| `/recuperar-senha` | Solicitação de recuperação de senha |
+
+### Autenticadas (requer login)
+| Rota | Perfis | Descrição |
+|---|---|---|
+| `/dashboard` | Todos | Painel com atalhos baseados no perfil |
+| `/clientes` | Todos | Listagem de clientes |
+| `/imoveis/novo` | Admin, Gestor, Corretor | Cadastro de imóvel |
+| `/imoveis/:id/editar` | Admin, Gestor, Corretor | Edição de imóvel |
+| `/corretores` | Admin, Gestor | Gestão de corretores |
+| `/relatorios` | Admin, Gestor | Relatórios de desempenho |
+
+### Comportamentos
+- Header adapta o menu de navegação conforme o perfil logado
+- Rotas protegidas redirecionam para `/login` se não autenticado
+- Rotas de Admin/Gestor redirecionam para `/dashboard` se perfil insuficiente
+- Token Bearer injetado automaticamente em todas as requisições autenticadas
+- Redirect para `/login` automático em resposta `401`
+
+### Adicionar componentes shadcn/ui
+```bash
+cd frontend
+npx shadcn@latest add dialog select toast
+```
+
+---
+
+## Rotas da API
 
 ### Auth
-- `POST /auth/login`
-- `POST /auth/recuperar-senha`
-- `POST /auth/redefinir-senha`
-- `DELETE /auth/logout`
+| Método | Rota | Acesso |
+|---|---|---|
+| POST | `/auth/login` | Público |
+| POST | `/auth/recuperar-senha` | Público |
+| POST | `/auth/redefinir-senha` | Público |
+| DELETE | `/auth/logout` | Autenticado |
 
 ### Imóveis
-- `GET /imoveis`
-- `GET /imoveis/:id`
-- `POST /imoveis`
-- `PATCH /imoveis/:id`
-- `DELETE /imoveis/:id`
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | `/imoveis` | Público |
+| GET | `/imoveis/:id` | Público |
+| POST | `/imoveis` | Admin, Gestor, Corretor |
+| PATCH | `/imoveis/:id` | Admin, Gestor, Corretor |
+| DELETE | `/imoveis/:id` | Admin, Gestor, Corretor |
 
 ### Clientes
-- `POST /clientes`
-- `PATCH /clientes/:id`
-- `DELETE /clientes/:id`
-- `GET /clientes/:id/favoritos`
-- `POST /clientes/:id/favoritos`
-- `DELETE /clientes/:id/favoritos/:imovelId`
-- `GET /clientes/:id/interesses`
+| Método | Rota | Acesso |
+|---|---|---|
+| POST | `/clientes` | Público |
+| PATCH | `/clientes/:id` | Autenticado |
+| DELETE | `/clientes/:id` | Admin, Gestor |
+| GET | `/clientes/:id/favoritos` | Autenticado |
+| POST | `/clientes/:id/favoritos` | Autenticado |
+| DELETE | `/clientes/:id/favoritos/:imovelId` | Autenticado |
+| GET | `/clientes/:id/interesses` | Autenticado |
 
 ### Corretores
-- `POST /corretores`
-- `POST /corretores/:id/imoveis`
-- `POST /corretores/:id/clientes`
+| Método | Rota | Acesso |
+|---|---|---|
+| POST | `/corretores` | Admin |
+| POST | `/corretores/:id/imoveis` | Admin, Gestor, Corretor |
+| POST | `/corretores/:id/clientes` | Admin, Gestor, Corretor |
 
 ### Interesses
-- `POST /interesses`
+| Método | Rota | Acesso |
+|---|---|---|
+| POST | `/interesses` | Autenticado |
 
 ### Relatórios
-- `GET /relatorios/imoveis-marcados/:corretorId`
-- `GET /relatorios/desempenho-corretores`
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | `/relatorios/imoveis-marcados/:corretorId` | Admin, Gestor, Corretor |
+| GET | `/relatorios/desempenho-corretores` | Admin, Gestor |
 
 ### Health check
-- `GET /health`
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | `/health` | Público |
 
 ---
 
 ## Perfis de acesso
 
-- **ADMINISTRADOR**: acesso total
-- **GESTOR**: CRUD de imóveis, relatórios, vínculos
-- **CORRETOR**: cadastrar/editar imóveis, vínculo, relatório próprio
-- **CLIENTE**: auto-cadastro, favoritos, registrar interesse
+| Perfil | Permissões |
+|---|---|
+| **ADMINISTRADOR** | Acesso total |
+| **GESTOR** | CRUD de imóveis, relatórios, vínculos, excluir clientes |
+| **CORRETOR** | Cadastrar/editar imóveis, vínculos, relatório próprio |
+| **CLIENTE** | Auto-cadastro, favoritos, registrar interesse |
 
 ---
 
 ## Testes
 
-Rodar testes unitários:
-```
+```bash
+# Unitários
 npm test
-```
 
-Rodar testes E2E:
-```
+# Cobertura
+npm run test:coverage
+
+# E2E
 npm run test:e2e
 ```
-
