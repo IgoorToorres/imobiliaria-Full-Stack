@@ -13,7 +13,7 @@ export default defineConfig({
     hookTimeout: 30_000,
     env: {
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/projet_rodrigo',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/projet-imobiliaria',
     },
   },
 })

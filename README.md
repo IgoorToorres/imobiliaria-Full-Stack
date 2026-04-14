@@ -108,7 +108,7 @@ cp .env.example .env
 
 Edite o `.env` conforme necessário:
 ```
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/projet_rodrigo"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/projet-imobiliaria"
 ```
 
 ### 4. Subir o banco de dados via Docker
