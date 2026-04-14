@@ -48,7 +48,7 @@ Sistema imobiliário completo com backend em Node.js/Fastify e frontend em React
 ## Estrutura do projeto
 
 ```
-projet-rodrigo/
+projet-imobiliaria/
 │
 ├── src/                           # Backend
 │   ├── domain/                    # Núcleo — entidades, repositórios, erros
@@ -93,7 +93,7 @@ projet-rodrigo/
 ### 1. Clonar o repositório
 ```bash
 git clone <URL_DO_REPO>
-cd projet-rodrigo
+cd projet-imobiliaria
 ```
 
 ### 2. Instalar dependências
